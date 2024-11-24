@@ -40,7 +40,17 @@ archive_blob = storage.Blob(
     account_name=account.name,
     container_name=blob_container.name,
     source=pulumi.AssetArchive({
-         "clco-demo/": pulumi.FileArchive("clco-demo/"),
+         # Recursively add all files from the folder
+        "static/": pulumi.FileArchive("static/"),
+        "templates/": pulumi.FileArchive("templates/"),
+        "venv/": pulumi.FileArchive("venv/"),
+        "db/": pulumi.FileArchive("db"),
+        "app.py": pulumi.FileAsset("app.py"),
+        "database.db": pulumi.FileAsset("database.db"),
+        "init_db.py": pulumi.FileAsset("init_db.py"),
+        "README.md": pulumi.FileAsset("README.md"),
+        
+
     }),
     content_type="application/zip",
 )
@@ -93,7 +103,7 @@ web_app = web.WebApp(
         app_settings=[
             web.NameValuePairArgs(name="WEBSITE_RUN_FROM_PACKAGE", value=blob_url_with_sas),
         ],
-        default_documents=["clco-demo/templates/index.html"],
+        
     ),
 )
 
