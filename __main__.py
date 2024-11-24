@@ -1,6 +1,8 @@
+
 import pulumi
 from pulumi_azure_native import storage
 from pulumi_azure_native import resources, web
+import datetime
 
 # Create an Azure Resource Group
 resource_group = resources.ResourceGroup("resource_group", location="East US")
@@ -38,18 +40,36 @@ archive_blob = storage.Blob(
     account_name=account.name,
     container_name=blob_container.name,
     source=pulumi.AssetArchive({
-        # Recursively add all files from the folder
-        "static/": pulumi.FileArchive("static/"),
-        "index.html": pulumi.FileAsset("templates/index.html"),
-        "venv/": pulumi.FileArchive("venv/"),
-        "db/": pulumi.FileArchive("db/"),
+         "clco-demo/": pulumi.FileArchive("clco-demo/"),
     }),
     content_type="application/zip",
 )
 
-# Get the blob's URL (SAS URL or endpoint for reference)
-blob_url = pulumi.Output.all(account.name, blob_container.name, archive_blob.name).apply(
-    lambda args: f"https://{args[0]}.blob.core.windows.net/{args[1]}/{args[2]}"
+# Generate SAS Token for the Blob
+def get_sas_token(args):
+    account_name, container_name, blob_name = args
+    sas_token = storage.list_storage_account_service_sas(
+        account_name=account_name,
+        protocols=storage.HttpProtocol.HTTPS,
+        shared_access_start_time=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        shared_access_expiry_time=(datetime.datetime.utcnow() + datetime.timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        resource=storage.SignedResource.C,
+        permissions=storage.Permissions.R,
+        resource_group_name=resource_group.name,
+        canonicalized_resource=f"/blob/{account_name}/{container_name}",
+        content_disposition="",
+        content_encoding="",
+        content_language="",
+        content_type="",
+        cache_control=""
+    )
+    return sas_token.service_sas_token
+
+sas_token = pulumi.Output.all(account.name, blob_container.name, archive_blob.name).apply(get_sas_token)
+
+# Construct the SAS URL
+blob_url_with_sas = pulumi.Output.all(account.name, blob_container.name, archive_blob.name, sas_token).apply(
+    lambda args: f"https://{args[0]}.blob.core.windows.net/{args[1]}/{args[2]}?{args[3]}"
 )
 
 # Create an App Service Plan for the Web App
@@ -71,8 +91,9 @@ web_app = web.WebApp(
     server_farm_id=app_service_plan.id,
     site_config=web.SiteConfigArgs(
         app_settings=[
-            web.NameValuePairArgs(name="WEBSITE_RUN_FROM_PACKAGE", value=blob_url),
-        ]
+            web.NameValuePairArgs(name="WEBSITE_RUN_FROM_PACKAGE", value=blob_url_with_sas),
+        ],
+        default_documents=["clco-demo/templates/index.html"],
     ),
 )
 
@@ -87,9 +108,9 @@ primary_key = (
     .apply(lambda accountKeys: accountKeys.keys[0].value)
 )
 
-# output URL Web App 
+# Export URLs
 pulumi.export("primary_storage_key", primary_key)
-pulumi.export("blob_url", blob_url)
-
-# output Web App URL change to get web_app `default_site_hostname`
+pulumi.export("blob_url", blob_url_with_sas)
 pulumi.export("app_url", web_app.default_host_name)
+
+
