@@ -1,0 +1,213 @@
+Metadata-Version: 2.1
+Name: flask-htmx
+Version: 0.3.1
+Summary: A Flask extension to work with HTMX.
+Home-page: https://github.com/edmondchuc/flask-htmx
+License: MIT
+Keywords: Flask,HTMX,Python,Web
+Author: Edmond Chuc
+Author-email: edmond.chuc@gmail.com
+Requires-Python: >=3.8,<4.0
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Flask
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Dist: Flask (>=2.0.2,<3.0.0)
+Project-URL: Bug Tracker, https://github.com/edmondchuc/flask-htmx/issues
+Project-URL: Documentation, https://flask-htmx.readthedocs.io
+Project-URL: Repository, https://github.com/edmondchuc/flask-htmx
+Description-Content-Type: text/x-rst
+
+##########
+Flask-HTMX
+##########
+
+.. image:: https://badge.fury.io/py/flask-htmx.svg
+    :target: https://badge.fury.io/py/flask-htmx
+
+.. image:: https://readthedocs.org/projects/flask-htmx/badge/?version=latest
+    :target: https://flask-htmx.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+
+.. image:: https://codecov.io/gh/edmondchuc/flask-htmx/branch/main/graph/badge.svg?token=K6YB3PB33T
+    :target: https://codecov.io/gh/edmondchuc/flask-htmx
+
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
+
+.. image:: https://img.shields.io/badge/License-MIT-red.svg
+    :target: https://github.com/edmondchuc/flask-htmx/blob/main/LICENSE
+
+.. image:: https://static.pepy.tech/personalized-badge/flask-htmx?period=week&units=international_system&left_color=grey&right_color=blue&left_text=downloads/week
+    :target: https://pepy.tech/project/flask-htmx
+
+.. image:: https://static.pepy.tech/personalized-badge/flask-htmx?period=month&units=international_system&left_color=grey&right_color=blue&left_text=downloads/month
+    :target: https://pepy.tech/project/flask-htmx
+
+.. image:: https://static.pepy.tech/personalized-badge/flask-htmx?period=total&units=international_system&left_color=grey&right_color=blue&left_text=downloads
+    :target: https://pepy.tech/project/flask-htmx
+
+A Flask extension to work with HTMX.
+
+Documentation: https://flask-htmx.readthedocs.io
+
+.. quickstart-startblock
+
+Quickstart
+==========
+
+Install the extension with pip.
+
+.. code-block:: bash
+
+    pip install flask-htmx
+
+Or perhaps you use Poetry.
+
+.. code-block:: bash
+
+    poetry add flask-htmx
+
+HTMX Request
+------------
+
+You can register the HTMX object by passing the Flask
+:code:`app` object via the constructor.
+
+.. code-block:: python
+
+    htmx = HTMX(app)
+
+Or you can register the HTMX object using
+`HTMX.init_app() <https://flask-htmx.readthedocs.io/en/latest/flask_htmx.htmx.html#flask_htmx.htmx.HTMX.init_app>`_.
+
+.. code-block:: python
+
+    htmx = HTMX()
+    htmx.init_app(app)
+
+A minimal working example.
+
+.. code-block:: python
+
+    from flask import Flask
+    from flask_htmx import HTMX
+
+    app = Flask(__name__)
+    htmx = HTMX(app)
+
+    @app.route("/")
+    def home():
+        if htmx:
+            return render_template("partials/thing.html")
+        return render_template("index.html")
+
+The above example checks whether the request came
+from HTMX or not. If :code:`htmx` evaluates to
+`True <https://docs.python.org/3/library/constants.html#True>`_, then it was a HTMX request, else
+`False <https://docs.python.org/3/library/constants.html#False>`_.
+
+This allows you to return a partial
+HTML when it's a HTMX request or the full page HTML
+when it is a normal browser request.
+
+Flask-HTMX also supports checking for HTMX headers
+during a request in the view. For example, check
+the current URL of the browser of a HTMX request.
+
+.. code-block:: python
+
+    @app.route("/")
+    def home():
+        current_url = htmx.current_url
+        return render_template("index.html", current_url=current_url)
+
+Other HTMX request headers are also available.
+See https://htmx.org/reference/#request_headers.
+
+HTMX Response
+-------------
+
+You might be interested on adding
+`htmx response headers <https://htmx.org/reference/#response_headers>`_ to your response.
+Use :code:`flask_htmx.make_response` for that. For example, instead of:
+
+.. code-block:: python
+
+    import json
+    from flask import make_response
+    from my_app import app
+
+    @app.route("/hola-mundo")
+    def hola_mundo():
+        body = "Hola Mundo!"
+        response = make_response(body)
+        response.headers["HX-Push-URL"] = "false"
+        trigger_string = json.dumps({"event1":"A message", "event2":"Another message"})
+        response.headers["HX-Trigger"] = trigger_string
+        return response
+
+You can do:
+
+.. code-block:: python
+
+    from flask_htmx import make_response
+    from my_app import app
+
+    @app.route("/hola-mundo")
+    def hola_mundo():
+        body = "Hola Mundo!"
+        return make_response(
+            body,
+            push_url=False,
+            trigger={"event1": "A message", "event2": "Another message"},
+        )
+
+.. quickstart-endblock
+
+Documentation
+=============
+Visit the `full documentation <https://flask-htmx.readthedocs.io>`_.
+
+Development
+===========
+
+Installation
+------------
+
+.. code-block:: bash
+
+    poetry install
+
+Running tests
+-------------
+
+.. code-block:: bash
+
+    poetry run pytest
+
+Coverage
+--------
+
+.. code-block:: bash
+
+    poetry run pytest --cov=flask_htmx tests/
+
+Docs
+----
+
+.. code-block:: bash
+
+    sphinx-autobuild docs docs/_build/html
+
