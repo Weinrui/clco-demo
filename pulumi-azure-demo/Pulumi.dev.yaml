@@ -1,0 +1,4 @@
+config:
+  azure:location: westus
+  app:runtime: python|3.9
+  app:sku: F1
