@@ -10,23 +10,23 @@ jobs:
     runs-on: ubuntu-latest  # 选择 GitHub Actions 运行的操作系统
 
     steps:
-      # 第一步：签出代码
+      # 签出代码
       - name: Checkout code
         uses: actions/checkout@v3  # 获取 GitHub 仓库中的代码
 
-      # 第二步：设置 Python 环境
+      # 设置 Python 环境
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'  # 根据项目的需要设置 Python 版本
 
-      # 第三步：安装依赖项
+      # 安装依赖项
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt  # 安装项目依赖
 
-      # 第四步：部署到 Azure Web App
+      # 部署到 Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
